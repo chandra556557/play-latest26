@@ -793,15 +793,26 @@ Navigating to Test Runs...`);
                         </div>
                         <div className="run-actions">
                           {run.allureReportUrl ? (
-                            <button
-                              className="btn-secondary"
-                              onClick={() => {
-                                setSelectedReport(run.allureReportUrl!);
-                                setActiveView('allure');
-                              }}
-                            >
-                              📊 View Report
-                            </button>
+                            <>
+                              <button
+                                className="btn-secondary"
+                                onClick={() => {
+                                  setSelectedReport(run.allureReportUrl!);
+                                  setActiveView('allure');
+                                }}
+                                title="View report in dashboard"
+                              >
+                                📊 View Report
+                              </button>
+                              <button
+                                className="btn-primary"
+                                onClick={() => window.open(`http://localhost:3001${run.allureReportUrl}`, '_blank')}
+                                title="Open report in new tab (recommended for RedHat)"
+                                style={{ marginLeft: '8px' }}
+                              >
+                                🔗 Open Direct
+                              </button>
+                            </>
                           ) : (
                             <button
                               className="btn-primary"
@@ -832,16 +843,66 @@ Navigating to Test Runs...`);
               <h1 className="view-title">Test Execution Reports</h1>
               {selectedReport ? (
                 <div className="report-viewer">
-                  <div className="report-header">
+                  <div className="report-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <button className="btn-secondary" onClick={() => setSelectedReport(null)}>
                       ← Back to Runs
                     </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        className="btn-primary"
+                        onClick={() => window.open(`http://localhost:3001${selectedReport}`, '_blank')}
+                        title="Open report in new tab (bypass iframe restrictions)"
+                      >
+                        🔗 Open in New Tab
+                      </button>
+                      <a 
+                        href={`http://localhost:3001${selectedReport}`}
+                        download
+                        className="btn-secondary"
+                        style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        title="Download full report"
+                      >
+                        💾 Download Report
+                      </a>
+                    </div>
                   </div>
-                  <iframe
-                    src={`http://localhost:3001${selectedReport}`}
-                    className="report-iframe"
-                    title="Test Execution Report"
-                  />
+                  {/* Iframe with fallback message */}
+                  <div style={{ position: 'relative', height: 'calc(100vh - 200px)' }}>
+                    <iframe
+                      src={`http://localhost:3001${selectedReport}`}
+                      className="report-iframe"
+                      title="Test Execution Report"
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '8px' 
+                      }}
+                      onError={() => {
+                        console.warn('Iframe failed to load - may be blocked by CSP/X-Frame-Options');
+                      }}
+                    />
+                    {/* Fallback notice if iframe fails */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      textAlign: 'center',
+                      padding: '32px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '2px dashed #cbd5e1',
+                      pointerEvents: 'none',
+                      zIndex: -1
+                    }}>
+                      <p style={{ fontSize: '48px', margin: 0 }}>⚠️</p>
+                      <h3 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Report may be blocked</h3>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+                        If you can't see the report above, click "Open in New Tab" button
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="empty-state">

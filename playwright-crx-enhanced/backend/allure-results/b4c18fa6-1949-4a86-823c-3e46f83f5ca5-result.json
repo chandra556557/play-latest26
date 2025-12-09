@@ -1,0 +1,24 @@
+{
+  "uuid": "b4c18fa6-1949-4a86-823c-3e46f83f5ca5",
+  "historyId": "b4c18fa6-1949-4a86-823c-3e46f83f5ca5",
+  "testCaseId": "b4c18fa6-1949-4a86-823c-3e46f83f5ca5",
+  "fullName": "b4c18fa6-1949-4a86-823c-3e46f83f5ca5",
+  "name": "b4c18fa6-1949-4a86-823c-3e46f83f5ca5",
+  "status": "failed",
+  "statusDetails": {
+    "message": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=submit-btn]')\u001b[22m\n"
+  },
+  "stage": "finished",
+  "start": 1765303493642,
+  "stop": 1765303493642,
+  "steps": [
+    {
+      "name": "unknown ",
+      "status": "failed",
+      "statusDetails": {},
+      "stage": "finished",
+      "start": 1765303493317,
+      "stop": 1765303493617
+    }
+  ]
+}

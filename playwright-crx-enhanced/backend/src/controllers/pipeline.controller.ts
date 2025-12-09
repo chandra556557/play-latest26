@@ -278,12 +278,12 @@ export class PipelineController {
 
   /**
    * Finalize and approve script
-   * Transitions: human_review → finalized
+   * Transitions: ai_enhanced → finalized OR testdata_ready → finalized OR human_review → finalized
    */
   async finalizeScript(req: Request, res: Response): Promise<any> {
     try {
       const { scriptId } = req.params;
-      const { approved, comments } = req.body;
+      const { approved, comments, reviewData } = req.body;
       const userId = (req as any).user?.userId;
 
       const { rows } = await pool.query(
@@ -298,11 +298,14 @@ export class PipelineController {
       const script = rows[0];
       const currentStatus = script.workflowStatus as WorkflowStatus;
 
-      if (!isTransitionAllowed(currentStatus, 'finalized')) {
+      // Allow finalization from ai_enhanced, testdata_ready, or human_review
+      const allowedStatuses = ['ai_enhanced', 'testdata_ready', 'human_review'];
+      if (!allowedStatuses.includes(currentStatus)) {
         return res.status(400).json({
           success: false,
-          error: `Cannot finalize from status: ${currentStatus}`,
-          currentStatus
+          error: `Cannot finalize from status: ${currentStatus}. Must be in ai_enhanced, testdata_ready, or human_review status.`,
+          currentStatus,
+          allowedStatuses
         });
       }
 
@@ -325,6 +328,7 @@ export class PipelineController {
             currentStatus: 'testdata_ready',
             approved: false,
             comments,
+            reviewData,
             nextRecommendedAction: 're-generate-testdata or re-run-ai'
           },
           message: 'Script rejected, sent back for revisions'
@@ -349,6 +353,7 @@ export class PipelineController {
           currentStatus: 'finalized',
           approved: true,
           comments,
+          reviewData,
           canRunInCI: true,
           nextRecommendedAction: 'run-in-ci or generate-insights'
         },

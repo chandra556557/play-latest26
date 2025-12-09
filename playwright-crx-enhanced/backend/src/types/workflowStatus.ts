@@ -49,20 +49,20 @@ export const WORKFLOW_STATES: Record<WorkflowStatus, WorkflowState> = {
   
   ai_enhanced: {
     status: 'ai_enhanced',
-    allowedTransitions: ['testdata_ready', 'human_review', 'draft'],
-    allowedActions: ['generate-testdata', 're-run-ai', 'manual-review', 'edit'],
+    allowedTransitions: ['testdata_ready', 'human_review', 'finalized', 'draft'],
+    allowedActions: ['generate-testdata', 'finalize', 're-run-ai', 'manual-review', 'edit'],
     canRunInCI: false,
     requiresHumanApproval: false,
-    description: 'AI enhancement completed, awaiting test data generation'
+    description: 'AI enhancement completed, ready for test data generation or direct finalization'
   },
   
   testdata_ready: {
     status: 'testdata_ready',
-    allowedTransitions: ['human_review', 'ai_enhanced'],
-    allowedActions: ['submit-for-review', 're-generate-testdata', 're-run-ai', 'edit'],
+    allowedTransitions: ['human_review', 'finalized', 'ai_enhanced'],
+    allowedActions: ['submit-for-review', 'finalize', 're-generate-testdata', 're-run-ai', 'edit'],
     canRunInCI: false,
     requiresHumanApproval: false,
-    description: 'Test data generated, ready for human review'
+    description: 'Test data generated, ready for human review or direct finalization'
   },
   
   human_review: {
@@ -104,11 +104,13 @@ export const WORKFLOW_TRANSITIONS: WorkflowTransition[] = [
   
   // From ai_enhanced
   { from: 'ai_enhanced', to: 'testdata_ready', action: 'generate-testdata', description: 'Generate boundary/equivalence/security test data' },
+  { from: 'ai_enhanced', to: 'finalized', action: 'quick-finalize', description: 'Skip test data, finalize directly' },
   { from: 'ai_enhanced', to: 'human_review', action: 'manual-review', description: 'Skip test data, go to review' },
   { from: 'ai_enhanced', to: 'draft', action: 'reject-ai', description: 'Reject AI suggestions, revert to draft' },
   
   // From testdata_ready
   { from: 'testdata_ready', to: 'human_review', action: 'submit-for-review', description: 'Submit for human validation' },
+  { from: 'testdata_ready', to: 'finalized', action: 'quick-finalize', description: 'Direct finalization without human review' },
   { from: 'testdata_ready', to: 'ai_enhanced', action: 're-run-ai', description: 'Re-run AI enhancement' },
   
   // From human_review

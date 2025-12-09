@@ -1,6 +1,8 @@
 /**
  * AI Analysis Proxy Service
- * Connects to Python FastAPI AI Analysis Service
+ * DEPRECATED: Python FastAPI service is no longer used.
+ * Script analysis has been migrated to Node.js (script-analysis.service.ts)
+ * This service remains for backward compatibility but does NOT connect to Python.
  */
 
 import axios, { AxiosInstance } from 'axios';
@@ -15,8 +17,9 @@ export class AIAnalysisProxyService {
   private isConnected: boolean = false;
 
   constructor(config?: Partial<AIAnalysisConfig>) {
+    // DISABLED: No longer connecting to Python service
     const defaultConfig: AIAnalysisConfig = {
-      baseURL: process.env.AI_ANALYSIS_SERVICE_URL || 'http://localhost:8000',
+      baseURL: 'http://disabled-python-service',  // Intentionally disabled
       timeout: 30000
     };
 
@@ -30,21 +33,8 @@ export class AIAnalysisProxyService {
       }
     });
 
-    this.checkConnection();
-  }
-
-  /**
-   * Check if AI Analysis service is available
-   */
-  private async checkConnection(): Promise<void> {
-    try {
-      const response = await this.client.get('/health');
-      this.isConnected = response.data.status === 'healthy';
-      console.log('✅ AI Analysis Service connected:', response.data);
-    } catch (error) {
-      this.isConnected = false;
-      console.warn('⚠️  AI Analysis Service not available. Service will return fallback responses.');
-    }
+    // DO NOT check connection - Python service is deprecated
+    console.log('⚠️  AI Analysis Proxy Service: Python backend is deprecated. Use Node.js script-analysis.service.ts instead.');
   }
 
   /**

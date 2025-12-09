@@ -73,6 +73,13 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
   const [visualAIAnalysis, setVisualAIAnalysis] = useState<any>(null); // Visual AI analysis results
   const [uploadedFile, setUploadedFile] = useState<File | null>(null); // Uploaded script file
   const [uploadAnalysis, setUploadAnalysis] = useState<any>(null); // Upload analysis results
+  
+  // Screenshot comparison states
+  const [baselineScreenshot, setBaselineScreenshot] = useState<File | null>(null);
+  const [currentScreenshot, setCurrentScreenshot] = useState<File | null>(null);
+  const [screenshotComparison, setScreenshotComparison] = useState<any>(null);
+  const [comparingScreenshots, setComparingScreenshots] = useState(false);
+  
   const [testDataRecommendation, setTestDataRecommendation] = useState<any>(null); // Test data recommendations
   const [generatedTestData, setGeneratedTestData] = useState<any>(null); // Generated test data
   const [generatingTestData, setGeneratingTestData] = useState(false); // Loading state for test data generation
@@ -281,24 +288,42 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
       }
 
       console.log('Found XPath expressions:', allXPaths);
+      console.log('🌐 Using external Genie API for XPath analysis');
 
-      // Analyze each XPath using AI service
-      const AI_SERVICE_URL = 'http://localhost:8000/api/ai-analysis';
+      // Analyze each XPath using external Genie API
+      const EXTERNAL_API_URL = 'http://34.46.36.105:3000/genieapi/ai-analysis';
+      const EXTERNAL_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwZ2FkbWluQGdtYWlsLmNvbSIsInVzZXJJZCI6IjEiLCJleHAiOjE3NjcyNjY4MjF9.AwYPxH7xCpJ8o4XtyFbjL5Er3Rvg057Yx272g7a1pcI';
+      
       const analyses = await Promise.all(
         allXPaths.map(async (xpath) => {
           try {
-            const response = await axios.post(`${AI_SERVICE_URL}/xpath-deep-analysis`, {
+            const response = await axios.post(`${EXTERNAL_API_URL}/xpath-deep-analysis`, {
               xpath: xpath
+            }, {
+              headers: {
+                'Authorization': `Bearer ${EXTERNAL_API_TOKEN}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000 // 30 second timeout
             });
             return {
               xpath,
               ...response.data.data
             };
-          } catch (error) {
+          } catch (error: any) {
             console.error('XPath analysis error for:', xpath, error);
+            
+            // Provide detailed error info
+            let errorMsg = 'Analysis failed';
+            if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+              errorMsg = 'Network error - API unreachable';
+            } else if (error.response) {
+              errorMsg = `API error (${error.response.status})`;
+            }
+            
             return {
               xpath,
-              error: 'Analysis failed'
+              error: errorMsg
             };
           }
         })
@@ -347,18 +372,27 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
         return match ? match[1] : null;
       }).filter(Boolean);
 
-      // Analyze screenshots using AI service
-      const AI_SERVICE_URL = 'http://localhost:8000/api/ai-analysis';
-      const response = await axios.post(`${AI_SERVICE_URL}/visual-ai-analysis`, {
-        script_content: code,
-        screenshot_commands: allScreenshots,
-        screenshot_paths: paths
-      });
-
       setVisualAIAnalysis({
         found: true,
         count: allScreenshots.length,
-        ...response.data.data
+        screenshot_commands: allScreenshots,
+        screenshot_paths: paths,
+        recommendations: [
+          {
+            screenshot_type: 'Visual Regression Testing',
+            suggestions: [
+              'Upload baseline and current screenshots for AI-powered comparison',
+              'Use the screenshot comparison feature below',
+              'Set appropriate tolerance levels (0.95 for strict, 0.70 for lenient)'
+            ],
+            best_practices: [
+              'Store baseline screenshots in version control',
+              'Use consistent viewport sizes',
+              'Mask dynamic content (timestamps, ads, user-specific data)',
+              'Run visual tests in headless mode for consistency'
+            ]
+          }
+        ]
       });
 
     } catch (error) {
@@ -383,21 +417,126 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const AI_SERVICE_URL = 'http://localhost:8000/api/ai-analysis';
-      const response = await axios.post(`${AI_SERVICE_URL}/upload-script-xpath-analysis`, formData, {
+      console.log('🌐 Uploading script to external Genie API for XPath analysis');
+      const EXTERNAL_API_URL = 'http://34.46.36.105:3000/genieapi/ai-analysis';
+      const EXTERNAL_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwZ2FkbWluQGdtYWlsLmNvbSIsInVzZXJJZCI6IjEiLCJleHAiOjE3NjcyNjY4MjF9.AwYPxH7xCpJ8o4XtyFbjL5Er3Rvg057Yx272g7a1pcI';
+      
+      const response = await axios.post(`${EXTERNAL_API_URL}/upload-script-xpath-analysis`, formData, {
         headers: {
+          'Authorization': `Bearer ${EXTERNAL_API_TOKEN}`,
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 30000, // 30 second timeout
+        validateStatus: (status) => status < 500 // Don't throw on 4xx errors
       });
 
       console.log('Upload analysis received:', response.data);
       setUploadAnalysis(response.data.data);
     } catch (err: any) {
       console.error('File upload error:', err);
-      setError(err.response?.data?.detail || 'Failed to analyze uploaded script');
+      
+      // Detailed error handling
+      let errorMessage = 'Failed to analyze uploaded script';
+      
+      if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
+        errorMessage = '⚠️ Cannot connect to external Genie API. Please check:\n' +
+                      '1. Network connection\n' +
+                      '2. VPN/Firewall settings\n' +
+                      '3. API server availability (http://34.46.36.105:3000)\n' +
+                      '4. CORS configuration on API server';
+      } else if (err.response) {
+        errorMessage = `API Error (${err.response.status}): ${err.response.data?.detail || err.response.statusText}`;
+      } else if (err.request) {
+        errorMessage = '⚠️ No response from server. The API might be down or unreachable.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBaselineUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setBaselineScreenshot(file);
+      console.log('Baseline screenshot uploaded:', file.name);
+    } else {
+      alert('Please upload a valid image file (PNG, JPG, etc.)');
+    }
+  };
+
+  const handleCurrentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setCurrentScreenshot(file);
+      console.log('Current screenshot uploaded:', file.name);
+    } else {
+      alert('Please upload a valid image file (PNG, JPG, etc.)');
+    }
+  };
+
+  const compareScreenshots = async () => {
+    if (!baselineScreenshot || !currentScreenshot) {
+      alert('Please upload both baseline and current screenshots');
+      return;
+    }
+
+    setComparingScreenshots(true);
+    setScreenshotComparison(null);
+    setError(null);
+
+    try {
+      // Convert images to base64
+      const baselineBase64 = await fileToBase64(baselineScreenshot);
+      const currentBase64 = await fileToBase64(currentScreenshot);
+
+      console.log('📸 Comparing screenshots via Node.js backend API...');
+      
+      // Call Node.js backend API for visual regression analysis
+      const response = await axios.post('http://localhost:3001/api/visual-regression/compare', {
+        before_screenshot: baselineBase64,
+        after_screenshot: currentBase64,
+        tolerance: 0.95
+      }, {
+        timeout: 30000,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('✅ Screenshot comparison complete:', response.data);
+      setScreenshotComparison(response.data.data);
+
+    } catch (err: any) {
+      console.error('Screenshot comparison error:', err);
+      
+      let errorMessage = 'Failed to compare screenshots';
+      if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
+        errorMessage = '⚠️ Cannot connect to backend API. Please ensure the backend server is running on port 3001.';
+      } else if (err.response) {
+        errorMessage = `API Error (${err.response.status}): ${err.response.data?.error || err.response.statusText}`;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setComparingScreenshots(false);
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix (e.g., "data:image/png;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const generateTestData = async () => {
@@ -1743,6 +1882,235 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                       {visualAIAnalysis.message || visualAIAnalysis.error || 'No screenshot assertions found'}
                     </p>
                   )}
+
+                </div>
+              )}
+
+              {/* Screenshot Comparison Tool */}
+              {analyzeVisualAI && (
+                <div style={{
+                  marginBottom: '24px',
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                }}>
+                  <h4 style={{ 
+                    fontSize: '16px', 
+                    fontWeight: 700, 
+                    marginBottom: '16px',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    📸 Real Screenshot Comparison (Node.js Backend)
+                  </h4>
+                  
+                  <div style={{ 
+                    background: 'white', 
+                    padding: '20px', 
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr', 
+                      gap: '20px',
+                      marginBottom: '16px'
+                    }}>
+                      {/* Baseline Screenshot */}
+                      <div>
+                        <label style={{ 
+                          display: 'block', 
+                          fontWeight: 600, 
+                          marginBottom: '8px',
+                          color: '#374151',
+                          fontSize: '14px'
+                        }}>
+                          📷 Baseline Screenshot
+                        </label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleBaselineUpload}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px dashed #8b5cf6',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '13px'
+                          }}
+                        />
+                        {baselineScreenshot && (
+                          <div style={{ 
+                            marginTop: '8px', 
+                            fontSize: '13px', 
+                            color: '#10b981',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            ✅ {baselineScreenshot.name}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Current Screenshot */}
+                      <div>
+                        <label style={{ 
+                          display: 'block', 
+                          fontWeight: 600, 
+                          marginBottom: '8px',
+                          color: '#374151',
+                          fontSize: '14px'
+                        }}>
+                          📷 Current Screenshot
+                        </label>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleCurrentUpload}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px dashed #8b5cf6',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '13px'
+                          }}
+                        />
+                        {currentScreenshot && (
+                          <div style={{ 
+                            marginTop: '8px', 
+                            fontSize: '13px', 
+                            color: '#10b981',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            ✅ {currentScreenshot.name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={compareScreenshots}
+                      disabled={!baselineScreenshot || !currentScreenshot || comparingScreenshots}
+                      style={{
+                        width: '100%',
+                        padding: '12px 24px',
+                        background: baselineScreenshot && currentScreenshot ? '#8b5cf6' : '#cbd5e1',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        cursor: baselineScreenshot && currentScreenshot ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {comparingScreenshots ? '⏳ Comparing...' : '🔍 Compare Screenshots'}
+                    </button>
+                  </div>
+
+                  {/* Comparison Results */}
+                  {screenshotComparison && (
+                    <div style={{
+                      background: 'white',
+                      padding: '20px',
+                      borderRadius: '8px'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                          color: screenshotComparison.verdict === 'PASS' ? '#10b981' : '#ef4444'
+                        }}>
+                          {screenshotComparison.verdict === 'PASS' ? '✅ PASS' : '❌ FAIL'}
+                        </div>
+                        <div style={{ fontSize: '16px', color: '#6b7280' }}>
+                          Similarity: <strong>{(screenshotComparison.similarity * 100).toFixed(2)}%</strong>
+                        </div>
+                      </div>
+
+                      {/* Similarity Metrics */}
+                      {screenshotComparison.similarity_metrics && (
+                        <div style={{
+                          background: '#f3f4f6',
+                          padding: '12px',
+                          borderRadius: '6px',
+                          marginBottom: '16px'
+                        }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                            📊 Metrics:
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#374151' }}>
+                            • Pixel Similarity: {(screenshotComparison.similarity_metrics.pixel_similarity * 100).toFixed(2)}%<br/>
+                            • Pixel Difference: {screenshotComparison.similarity_metrics.pixel_difference_percent}%<br/>
+                            • Dimensions: {screenshotComparison.similarity_metrics.before_dimensions}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Changes Detected */}
+                      {screenshotComparison.changes && screenshotComparison.changes.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                            ⚠️ Changes Detected:
+                          </div>
+                          {screenshotComparison.changes.map((change: any, idx: number) => (
+                            <div key={idx} style={{
+                              padding: '8px 12px',
+                              background: '#fef3c7',
+                              borderLeft: '4px solid #f59e0b',
+                              borderRadius: '4px',
+                              marginBottom: '8px',
+                              fontSize: '12px'
+                            }}>
+                              <strong>{change.type}:</strong> {change.description}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Playwright Code Suggestion */}
+                      {screenshotComparison.suggested_playwright_code && (
+                        <div style={{
+                          background: '#f0fdf4',
+                          padding: '12px',
+                          borderRadius: '6px',
+                          border: '1px solid #10b981'
+                        }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#047857', marginBottom: '8px' }}>
+                            💡 Suggested Playwright Code:
+                          </div>
+                          <code style={{
+                            fontSize: '11px',
+                            color: '#065f46',
+                            display: 'block',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-all',
+                            marginBottom: '8px'
+                          }}>
+                            {screenshotComparison.suggested_playwright_code.assertion}
+                          </code>
+                          <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                            Options: {screenshotComparison.suggested_playwright_code.options}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -1962,7 +2330,7 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
           ) : (
             <div className="diff-view">
               <div className="diff-container">
-                {enhancement.diff.map((line, idx) => (
+                {(enhancement.diff || []).map((line, idx) => (
                   <div key={idx} className={`diff-line ${line.type}`}>
                     <span className="line-num">{line.line + 1}</span>
                     <span className="line-content">{line.content}</span>

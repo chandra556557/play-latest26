@@ -46,6 +46,88 @@ router.post('/data', createTestData);
 router.put('/data/:id', updateTestData);
 router.delete('/data/:id', deleteTestData);
 
+// Get test data by scriptId (for validation modal)
+router.get('/', async (req, res) => {
+  try {
+    const { scriptId } = req.query;
+    const userId = (req as any).user?.userId;
+
+    if (!scriptId) {
+      return res.status(400).json({
+        success: false,
+        error: 'scriptId query parameter is required'
+      });
+    }
+
+    // Find test data associated with this script
+    // Look for test suite matching the script name or ID
+    const { rows: scriptRows } = await pool.query(
+      `SELECT name FROM "Script" WHERE id = $1 AND "userId" = $2`,
+      [scriptId, userId]
+    );
+
+    if (scriptRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Script not found'
+      });
+    }
+
+    const scriptName = scriptRows[0].name;
+
+    // Find test suites related to this script
+    const { rows: suiteRows } = await pool.query(
+      `SELECT id FROM "TestSuite" WHERE "userId" = $1 AND (name LIKE $2 OR name LIKE $3)`,
+      [userId, `%${scriptName}%`, `%${scriptId}%`]
+    );
+
+    if (suiteRows.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'No test data found for this script'
+      });
+    }
+
+    // Get all test data from these suites
+    const suiteIds = suiteRows.map(s => s.id);
+    const { rows: testDataRows } = await pool.query(
+      `SELECT td.*, ts.name as "suiteName" 
+       FROM "TestData" td 
+       INNER JOIN "TestSuite" ts ON td."suiteId" = ts.id
+       WHERE td."suiteId" = ANY($1)
+       ORDER BY td."createdAt" DESC`,
+      [suiteIds]
+    );
+
+    // Parse and format test data
+    const testData = testDataRows.map((row: any) => ({
+      id: row.id,
+      suiteId: row.suiteId,
+      suiteName: row.suiteName,
+      name: row.name,
+      environment: row.environment,
+      type: row.type,
+      data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+      _testDataType: row.type, // For frontend grouping
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    }));
+
+    return res.json({
+      success: true,
+      data: testData,
+      count: testData.length
+    });
+  } catch (error: any) {
+    logger.error('Error fetching test data by scriptId:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch test data'
+    });
+  }
+});
+
 // Generate test data via external Python API
 router.post('/generate', async (req, res) => {
   const traceId = Math.random().toString(36).slice(2);

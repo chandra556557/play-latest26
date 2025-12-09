@@ -300,7 +300,6 @@ export const ScriptValidationModal: React.FC<ScriptValidationModalProps> = ({
     setWorkflowStatus(action);
     
     try {
-      // Build review payload
       const reviewData = {
         acceptedSuggestions: Array.from(selectedSuggestions),
         suggestionReviews: Object.fromEntries(suggestionReviews),
@@ -311,25 +310,25 @@ export const ScriptValidationModal: React.FC<ScriptValidationModalProps> = ({
 
       switch (action) {
         case 'approve':
-          // Apply enhancements first
+          // Apply enhancements
           await applyEnhancements();
           
-          // Then finalize via pipeline
+          // Finalize script (allows ai_enhanced, testdata_ready, or human_review)
           await axios.post(
-            `http://localhost:3001/api/pipeline/${selectedScriptId}/finalize`,
+            `${API_URL}/pipeline/${selectedScriptId}/finalize`,
             { 
               approved: true, 
-              comments: globalComment || 'Approved during human validation',
+              comments: globalComment || 'Approved',
               reviewData 
             },
             { headers }
           );
-          alert('✅ Script approved and finalized! Status: finalized');
+          alert('✅ Script approved and finalized!');
           break;
 
         case 'requestChanges':
           await axios.post(
-            `http://localhost:3001/api/pipeline/${selectedScriptId}/finalize`,
+            `${API_URL}/pipeline/${selectedScriptId}/finalize`,
             { 
               approved: false, 
               comments: globalComment || 'Changes requested',
@@ -345,7 +344,7 @@ export const ScriptValidationModal: React.FC<ScriptValidationModalProps> = ({
             `${API_URL}/scripts/${selectedScriptId}/update-workflow`,
             { 
               workflowStatus: 'ai_enhanced',
-              comments: globalComment || 'Rejected - Re-run AI enhancement requested'
+              comments: globalComment || 'Re-run AI enhancement'
             },
             { headers }
           );
@@ -357,7 +356,7 @@ export const ScriptValidationModal: React.FC<ScriptValidationModalProps> = ({
             `${API_URL}/scripts/${selectedScriptId}/update-workflow`,
             { 
               workflowStatus: 'draft',
-              comments: globalComment || 'Rejected - Start over'
+              comments: globalComment || 'Rejected'
             },
             { headers }
           );
@@ -550,6 +549,33 @@ export const ScriptValidationModal: React.FC<ScriptValidationModalProps> = ({
         {error && (
           <div className="error-banner">
             ❌ {error}
+          </div>
+        )}
+
+        {scriptWorkflowStatus === 'ai_enhanced' && (
+          <div style={{
+            padding: '16px',
+            margin: '0 24px 16px',
+            background: '#dbeafe',
+            border: '1px solid #3b82f6',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'start',
+            gap: '12px'
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>💡</span>
+            <div>
+              <h4 style={{ margin: '0 0 8px 0', color: '#1e40af', fontSize: '0.95rem', fontWeight: '600' }}>
+                Optional: Generate Test Data
+              </h4>
+              <p style={{ margin: 0, color: '#1e3a8a', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                You can finalize this script directly, or optionally generate test data for comprehensive testing:
+                <br/>
+                • <strong>Finalize Now</strong>: Click "Approve & Finalize" below
+                <br/>
+                • <strong>Add Test Data</strong>: Go to Script Enhancement → Generate Test Data → Return here
+              </p>
+            </div>
           </div>
         )}
 

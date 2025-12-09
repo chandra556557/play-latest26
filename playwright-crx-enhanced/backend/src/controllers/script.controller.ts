@@ -286,21 +286,16 @@ export const enhanceScript = async (req: Request, res: Response) => {
 
     const suggestions: Suggestion[] = [];
 
-    // ============ NEW: TRY AI SERVICE FIRST ============
+    // ============ NEW: NODE.JS AI SERVICE (NO PYTHON) ============
     try {
-      console.log('🤖 Calling AI service for enhanced script analysis...');
+      console.log('🤖 Calling Node.js AI service for enhanced script analysis...');
       
-      const axios = require('axios');
-      const aiResponse = await axios.post('http://localhost:8000/api/ai-analysis/analyze-script-enhanced', {
-        script_code: code,
-        generate_recommendations: true
-      }, {
-        timeout: 30000
-      });
+      const { scriptAnalysisService } = await import('../services/script-analysis.service');
+      const aiResponse = await scriptAnalysisService.analyzeScript(code, true);
       
-      if (aiResponse.data.success) {
-        const aiAnalysis = aiResponse.data.data;
-        console.log(`✅ AI Analysis: Quality ${aiAnalysis.quality_score}/100, ${aiAnalysis.recommendations?.length || 0} recommendations`);
+      if (aiResponse.success) {
+        const aiAnalysis = aiResponse.data;
+        console.log(`✅ Node.js AI Analysis: Quality ${aiAnalysis.quality_score}/100, ${aiAnalysis.recommendations?.length || 0} recommendations`);
         
         // Convert AI recommendations to suggestions
         if (aiAnalysis.recommendations && Array.isArray(aiAnalysis.recommendations)) {
@@ -315,7 +310,8 @@ export const enhanceScript = async (req: Request, res: Response) => {
               aiPowered: true,
               aiMetadata: {
                 quality_score: aiAnalysis.quality_score,
-                test_pattern: aiAnalysis.test_pattern
+                test_pattern: aiAnalysis.test_pattern,
+                analysis_method: aiAnalysis.metadata.analysis_method
               }
             });
           });
@@ -328,7 +324,7 @@ export const enhanceScript = async (req: Request, res: Response) => {
               suggestions.push({
                 lineNumber: xpath.line_number,
                 originalCode: lines[xpath.line_number] || '',
-                suggestedCode: xpath.recommended_alternative || `// ${xpath.recommended_alternative}`,
+                suggestedCode: xpath.playwright_suggestion || xpath.recommended_alternative || `// ${xpath.recommended_alternative}`,
                 reason: `XPath stability: ${xpath.stability_score}/100, complexity: ${xpath.complexity_score}/100. Issues: ${xpath.issues.join(', ')}`,
                 confidence: 0.92,
                 category: 'selector',
@@ -344,12 +340,12 @@ export const enhanceScript = async (req: Request, res: Response) => {
           });
         }
         
-        console.log(`✅ Added ${suggestions.length} AI-powered suggestions`);
+        console.log(`✅ Added ${suggestions.length} AI-powered suggestions (Node.js)`);
       }
     } catch (aiError: any) {
-      console.warn('⚠️ AI service unavailable, using regex patterns:', aiError.message);
+      console.warn('⚠️ Node.js AI service unavailable, using regex patterns:', aiError.message);
     }
-    // ============ END AI SERVICE INTEGRATION ============
+    // ============ END NODE.JS AI SERVICE INTEGRATION ============
 
     // Heuristic patterns for Phase I enhancements
     const textSelectorRegex = /(page\.(click|locator)\s*\(\s*['"]text=([^'"]+)['"]\s*\))/;

@@ -306,6 +306,16 @@ const forwardToExternalAPI = async (testDataType: string, req: Request, res: Res
 
     console.log(`📤 Forwarding to external API: ${externalApiUrl}`);
     console.log(`🔑 Using token from .env`);
+    console.log(`📝 Script length: ${script_code?.length || 0} characters`);
+    console.log(`📋 Template:`, JSON.stringify(template));
+    console.log(`🔢 Count: ${count}`);
+    
+    // Debug: Log first 200 chars of script to verify what's being sent
+    if (script_code) {
+      console.log(`📜 Script preview:`, script_code.substring(0, 200) + '...');
+    } else {
+      console.warn(`⚠️ WARNING: No script_code provided!`);
+    }
 
     // Forward request to external API
     const response = await axios.post(externalApiUrl, {
