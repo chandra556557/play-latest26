@@ -108,6 +108,15 @@ export class AllureService {
         fs.mkdirSync(reportPath, { recursive: true });
       }
 
+      // Copy Playwright CRX logo to report directory
+      const logoSourcePath = path.join(process.cwd(), 'playwright-crx-logo.png');
+      const logoDestPath = path.join(reportPath, 'playwright-crx-logo.png');
+      
+      if (fs.existsSync(logoSourcePath)) {
+        fs.copyFileSync(logoSourcePath, logoDestPath);
+        logger.info(`✅ Copied Playwright CRX logo to report directory`);
+      }
+
       // Check if allure results exist for this test run
       const resultsPath = path.join(ALLURE_RESULTS_DIR, `${testRunId}-result.json`);
       
@@ -160,6 +169,26 @@ export class AllureService {
           
           // Replace Allure text in the UI with Playwright CRX
           htmlContent = htmlContent.replace(/Allure/g, 'Playwright CRX');
+          
+          // Inject custom CSS to replace logo
+          const customCSS = `
+<style>
+/* Replace Allure logo with Playwright CRX logo */
+.side-nav__brand {
+  background-image: url('playwright-crx-logo.png') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  width: 200px !important;
+  height: 60px !important;
+}
+.side-nav__brand svg,
+.side-nav__brand img {
+  display: none !important;
+}
+</style>
+`;
+          htmlContent = htmlContent.replace('</head>', customCSS + '</head>');
           
           fs.writeFileSync(indexPath, htmlContent);
           

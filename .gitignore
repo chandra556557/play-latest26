@@ -11,3 +11,6 @@ logs/
 *.zip
 *.rar
 .trae/
+
+# Exception: Keep Playwright CRX logo
+!playwright-crx-logo.png
