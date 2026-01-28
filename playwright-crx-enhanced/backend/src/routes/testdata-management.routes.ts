@@ -18,7 +18,8 @@ import {
   generateBoundaryTestData,
   generateEquivalenceTestData,
   generatePositiveTestData,
-  generateNegativeTestData
+  generateNegativeTestData,
+  generateFromScriptTestData
 } from '../controllers/testData.controller';
 import { analyzeXPath } from '../controllers/ai-analysis.controller';
 
@@ -180,6 +181,9 @@ router.post('/generate', async (req, res) => {
     }
   }
 });
+
+// Generate test data from a Playwright script (Python first, Node fallback)
+router.post('/generate/from-script', generateFromScriptTestData);
 
 router.post('/generate-save', async (req, res) => {
   const traceId = Math.random().toString(36).slice(2);

@@ -26,6 +26,7 @@ import workflowRoutes from './routes/workflow.routes';
 import pipelineRoutes from './routes/pipeline.routes';
 import testingStrategiesRoutes from './routes/testing-strategies.routes';
 import visualRegressionRoutes from './routes/visual-regression.routes';
+import databaseTestingRoutes from './routes/database-testing.routes';
 import pool from './db';
 
 // Middleware
@@ -148,6 +149,7 @@ app.get('/api', (_req, res) => {
       '/api/pipeline/*',
       '/api/testing-strategies/*',
       '/api/visual-regression/*',
+      '/api/database-testing/*',
       '/api-docs',
       '/api-docs.json'
     ]
@@ -176,6 +178,7 @@ app.use('/api/workflow', workflowRoutes);
 app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/testing-strategies', testingStrategiesRoutes);
 app.use('/api/visual-regression', visualRegressionRoutes);
+app.use('/api/database-testing', databaseTestingRoutes);
 
 app.use((_req, res) => { res.status(404).json({ error: 'Route not found' }); });
 app.use(errorHandler);

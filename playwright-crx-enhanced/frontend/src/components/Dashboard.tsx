@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
 import axios from 'axios';
 import ApiTesting from './ApiTesting.tsx';
+import DatabaseTesting from './DatabaseTesting';
 import ScriptEnhancementModal from './ScriptEnhancementModal';
 import ImportScriptModal from './ImportScriptModal';
 import ScriptValidationModal from './ScriptValidationModal';
 import ScriptCueCards from './ScriptCueCards';
 import TestDataManager from './TestDataManager';
+import DataDrivenTesting from './DataDrivenTesting';
 // import ErrorAnalysis from './ErrorAnalysis';
 import './Dashboard.css';
 
@@ -43,12 +58,14 @@ interface TestRun {
 //   successRate: number;
 // }
 
-type ActiveView = 
-  | 'overview' 
-  | 'scripts' 
-  | 'runs' 
-  | 'testdata' 
-  | 'apitesting' 
+type ActiveView =
+  | 'overview'
+  | 'scripts'
+  | 'runs'
+  | 'testdata'
+  | 'datadriventesting'
+  | 'apitesting'
+  | 'databasetesting'
   | 'allure'
   | 'analytics'
   | 'settings';
@@ -59,6 +76,9 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [activeView, setActiveView] = useState<ActiveView>('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [userRole, setUserRole] = useState<'admin' | 'editor' | 'user'>('user');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
@@ -86,6 +106,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
 
   const token = localStorage.getItem('accessToken');
   const headers = { Authorization: `Bearer ${token}` };
+
+  const scriptsCount = scripts.length;
+  const runsCount = testRuns.length;
+  const reportsCount = testRuns.filter(r => r.executionReportUrl || r.allureReportUrl).length;
+
+  useEffect(() => {
+    const storedRole = (localStorage.getItem('userRole') as 'admin' | 'editor' | 'user') || 'user';
+    setUserRole(storedRole);
+  }, []);
 
   // Handle 401 errors globally - but only for our backend, not external APIs
   useEffect(() => {
@@ -327,6 +356,7 @@ Navigating to Test Runs...`);
     { id: 'runs', icon: '▶️', label: 'Test Runs', category: 'Test Management' },
     { id: 'testdata', icon: '🗄️', label: 'Test Data', category: 'Data Management' },
     { id: 'apitesting', icon: '🔌', label: 'API Testing', category: 'Testing Tools' },
+    { id: 'databasetesting', icon: '🗃️', label: 'Database Testing', category: 'Testing Tools' },
     { id: 'allure', icon: '📈', label: 'Test Execution Reports', category: 'Reports' },
     { id: 'analytics', icon: '📉', label: 'Analytics', category: 'Reports' },
     { id: 'settings', icon: '⚙️', label: 'Settings', category: 'System' }
@@ -337,6 +367,8 @@ Navigating to Test Runs...`);
     acc[item.category].push(item);
     return acc;
   }, {} as Record<string, typeof menuItems>);
+
+  const currentItem = menuItems.find(m => m.id === activeView);
 
   const currentProjectName = selectedProjectId
     ? projects.find(p => p.id === selectedProjectId)?.name || 'Unknown Project'
@@ -386,8 +418,14 @@ Navigating to Test Runs...`);
         <nav className="sidebar-nav">
           {Object.entries(groupedMenuItems).map(([category, items]) => (
             <div key={category} className="nav-category">
-              <div className="category-label">{category}</div>
-              {items.map((item) => (
+              <button
+                className="category-toggle"
+                onClick={() => setCollapsedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
+              >
+                <span className={`toggle-arrow ${collapsedCategories[category] ? 'collapsed' : ''}`}>▾</span>
+                <span className="category-label">{category}</span>
+              </button>
+              {!collapsedCategories[category] && items.map((item) => (
                 <button
                   key={item.id}
                   className={`nav-item ${activeView === item.id ? 'active' : ''}`}
@@ -395,10 +433,19 @@ Navigating to Test Runs...`);
                     setActiveView(item.id as ActiveView);
                     setMenuOpen(false);
                   }}
+                  title={item.label}
                 >
                   <span className="nav-icon">{item.icon}</span>
                   <span className="nav-label">{item.label}</span>
-                  {/* Badge removed - no longer using badges */}
+                  {item.id === 'scripts' && scriptsCount > 0 && (
+                    <span className="nav-badge">{scriptsCount}</span>
+                  )}
+                  {item.id === 'runs' && runsCount > 0 && (
+                    <span className="nav-badge">{runsCount}</span>
+                  )}
+                  {item.id === 'allure' && reportsCount > 0 && (
+                    <span className="nav-badge">{reportsCount}</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -408,6 +455,40 @@ Navigating to Test Runs...`);
 
       {/* Main Content */}
       <main className="dashboard-main">
+        <div className="topbar">
+          <div className="topbar-left">
+            <input
+              className="topbar-search"
+              type="text"
+              placeholder="Search scripts, runs, analytics"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="breadcrumbs">
+              <span className="crumb">Home</span>
+              <span className="crumb-sep">/</span>
+              <span className="crumb">{currentItem?.category || 'Main'}</span>
+              <span className="crumb-sep">/</span>
+              <span className="crumb active">{currentItem?.label || 'Overview'}</span>
+            </div>
+          </div>
+          <div className="topbar-right">
+            <select
+              className="topbar-select"
+              value={selectedProjectId || ''}
+              onChange={(e) => setSelectedProjectId(e.target.value || null)}
+            >
+              <option value="">All Projects</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            {['admin','editor'].includes(userRole) && (
+              <button className="btn-secondary" onClick={() => setShowImportDialog(true)}>Import</button>
+            )}
+            <button className="btn-primary" onClick={loadData}>Reload</button>
+          </div>
+        </div>
         <div className="dashboard-content">
           {/* Overview */}
           {activeView === 'overview' && (
@@ -593,40 +674,49 @@ Navigating to Test Runs...`);
                   </div>
                 ) : (
                   <div className="cards-grid">
-                    {scripts.map((script) => (
-                      <div key={script.id} className="content-card">
-                        <div className="card-header">
-                          <h3>{script.name}</h3>
-                          <span className="language-badge">{script.language}</span>
+                    {scripts
+                      .filter((script) =>
+                        searchQuery
+                          ? script.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (script.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+                          : true
+                      )
+                      .map((script) => (
+                        <div key={script.id} className="content-card">
+                          <div className="card-header">
+                            <h3>{script.name}</h3>
+                            <span className="language-badge">{script.language}</span>
+                          </div>
+                          {script.description && <p className="card-description">{script.description}</p>}
+                          <div className="card-meta">
+                            <span>👤 {script.user.name}</span>
+                            <span>📅 {new Date(script.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {userRole !== 'user' && (
+                            <div className="card-actions" style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                              <button 
+                                className="btn-secondary"
+                                onClick={() => {
+                                  setSelectedScriptForAction({ id: script.id, name: script.name });
+                                  setShowEnhancementModal(true);
+                                }}
+                                style={{ flex: 1, fontSize: 13 }}
+                              >
+                                🚀 Enhance
+                              </button>
+                              <button 
+                                className="btn-secondary"
+                                onClick={() => {
+                                  setSelectedScriptForAction({ id: script.id, name: script.name });
+                                  setShowValidationModal(true);
+                                }}
+                                style={{ flex: 1, fontSize: 13 }}
+                              >
+                                🔍 Validate
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        {script.description && <p className="card-description">{script.description}</p>}
-                        <div className="card-meta">
-                          <span>👤 {script.user.name}</span>
-                          <span>📅 {new Date(script.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        <div className="card-actions" style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                          <button 
-                            className="btn-secondary"
-                            onClick={() => {
-                              setSelectedScriptForAction({ id: script.id, name: script.name });
-                              setShowEnhancementModal(true);
-                            }}
-                            style={{ flex: 1, fontSize: 13 }}
-                          >
-                            🚀 Enhance
-                          </button>
-                          <button 
-                            className="btn-secondary"
-                            onClick={() => {
-                              setSelectedScriptForAction({ id: script.id, name: script.name });
-                              setShowValidationModal(true);
-                            }}
-                            style={{ flex: 1, fontSize: 13 }}
-                          >
-                            🔍 Validate
-                          </button>
-                        </div>
-                      </div>
                     ))}
                   </div>
                 )}
@@ -780,7 +870,13 @@ Navigating to Test Runs...`);
                 </div>
               ) : (
                 <div className="runs-list">
-                  {testRuns.map((run) => (
+                  {testRuns
+                    .filter((run) =>
+                      searchQuery
+                        ? run.script.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        : true
+                    )
+                    .map((run) => (
                     <div key={run.id} className="run-card">
                       <div className="run-header">
                         <div className="run-info">
@@ -792,12 +888,12 @@ Navigating to Test Runs...`);
                           </div>
                         </div>
                         <div className="run-actions">
-                          {run.allureReportUrl ? (
+                          {(run.executionReportUrl || run.allureReportUrl) ? (
                             <>
                               <button
                                 className="btn-secondary"
                                 onClick={() => {
-                                  setSelectedReport(run.allureReportUrl!);
+                                  setSelectedReport((run.executionReportUrl || run.allureReportUrl)!);
                                   setActiveView('allure');
                                 }}
                                 title="View report in dashboard"
@@ -806,7 +902,7 @@ Navigating to Test Runs...`);
                               </button>
                               <button
                                 className="btn-primary"
-                                onClick={() => window.open(`http://localhost:3001${run.allureReportUrl}`, '_blank')}
+                                onClick={() => window.open(`http://localhost:3001${run.executionReportUrl || run.allureReportUrl}` , '_blank')}
                                 title="Open report in new tab (recommended for RedHat)"
                                 style={{ marginLeft: '8px' }}
                               >
@@ -814,13 +910,15 @@ Navigating to Test Runs...`);
                               </button>
                             </>
                           ) : (
-                            <button
-                              className="btn-primary"
-                              onClick={() => generateAllureReport(run.id)}
-                              disabled={generatingReport === run.id}
-                            >
-                              {generatingReport === run.id ? '⏳ Generating...' : '📊 Generate Report'}
-                            </button>
+                            userRole !== 'user' && (
+                              <button
+                                className="btn-primary"
+                                onClick={() => generateAllureReport(run.id)}
+                                disabled={generatingReport === run.id}
+                              >
+                                {generatingReport === run.id ? '⏳ Generating...' : '📊 Generate Report'}
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
@@ -834,8 +932,14 @@ Navigating to Test Runs...`);
           {/* Test Data Management */}
           {activeView === 'testdata' && <TestDataManager />}
 
+          {/* Data-Driven Testing with AI */}
+          {activeView === 'datadriventesting' && <DataDrivenTesting />}
+
           {/* API Testing */}
           {activeView === 'apitesting' && <ApiTesting />}
+
+          {/* Database Testing */}
+          {activeView === 'databasetesting' && <DatabaseTesting />}
 
           {/* Allure Reports */}
           {activeView === 'allure' && (
@@ -926,6 +1030,61 @@ Navigating to Test Runs...`);
                 <div className="loading-state">Loading analytics...</div>
               ) : (
                 <>
+                  <div className="analytics-grid">
+                    <div className="analytics-card">
+                      <h3>📊 Status Distribution (Recharts)</h3>
+                      {(() => {
+                        const passed = testRuns.filter(r => r.status === 'passed').length;
+                        const failed = testRuns.filter(r => r.status === 'failed').length;
+                        const error = testRuns.filter(r => r.status === 'error').length;
+                        const pieData = [
+                          { name: 'Passed', value: passed, color: '#10b981' },
+                          { name: 'Failed', value: failed, color: '#ef4444' },
+                          { name: 'Error', value: error, color: '#f59e0b' }
+                        ];
+                        return (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={80}>
+                                {pieData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
+                    </div>
+                    <div className="analytics-card">
+                      <h3>📈 Avg Duration Trend (Recharts)</h3>
+                      {(() => {
+                        const days = Array.from({ length: 7 }, (_, i) => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - (6 - i));
+                          return d;
+                        });
+                        const data = days.map(d => {
+                          const dayRuns = testRuns.filter(r => new Date(r.startedAt).toDateString() === d.toDateString());
+                          const durations = dayRuns.map(r => r.duration || 0).filter(v => v > 0);
+                          const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+                          return { day: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), avg };
+                        });
+                        return (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={data}>
+                              <CartesianGrid stroke="#e5e7eb" />
+                              <XAxis dataKey="day" />
+                              <YAxis tickFormatter={(v) => `${Math.round(v/1000)}s`} />
+                              <Tooltip formatter={(v) => `${Math.round((v as number)/1000)}s`} />
+                              <Line type="monotone" dataKey="avg" stroke="#667eea" strokeWidth={2} dot={{ r: 3 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
+                    </div>
+                  </div>
                   {/* Summary Stats */}
                   <div className="analytics-stats">
                     <div className="stat-card">
@@ -974,6 +1133,72 @@ Navigating to Test Runs...`);
 
                   {/* Charts Grid */}
                   <div className="analytics-grid">
+                    <div className="analytics-card">
+                      <h3>📊 Status Distribution (Recharts)</h3>
+                      <div className="chart-container">
+                        {testRuns.length > 0 ? (
+                          (() => {
+                            const passed = testRuns.filter(r => r.status === 'passed').length;
+                            const failed = testRuns.filter(r => r.status === 'failed').length;
+                            const error = testRuns.filter(r => r.status === 'error').length;
+                            const data = [
+                              { name: 'Passed', value: passed },
+                              { name: 'Failed', value: failed },
+                              { name: 'Error', value: error }
+                            ];
+                            const colors = ['#10b981', '#ef4444', '#f59e0b'];
+                            return (
+                              <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                  <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
+                                    {data.map((_, index) => (
+                                      <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            );
+                          })()
+                        ) : (
+                          <div className="empty-chart">No data</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h3>📈 Avg Duration Trend (Recharts)</h3>
+                      <div className="chart-container">
+                        {testRuns.length > 0 ? (
+                          (() => {
+                            const last7Days = Array.from({ length: 7 }, (_, i) => {
+                              const date = new Date();
+                              date.setDate(date.getDate() - (6 - i));
+                              return date.toISOString().split('T')[0];
+                            });
+                            const data = last7Days.map(date => {
+                              const dayRuns = testRuns.filter(r => new Date(r.startedAt).toISOString().split('T')[0] === date && r.duration);
+                              const avg = dayRuns.length > 0 ? Math.round(dayRuns.reduce((s, r) => s + (r.duration || 0), 0) / dayRuns.length) : 0;
+                              return { date, avg };
+                            });
+                            return (
+                              <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="date" />
+                                  <YAxis />
+                                  <Tooltip />
+                                  <Line type="monotone" dataKey="avg" stroke="#667eea" strokeWidth={2} dot={false} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            );
+                          })()
+                        ) : (
+                          <div className="empty-chart">No data</div>
+                        )}
+                      </div>
+                    </div>
                     {/* Test Status Distribution */}
                     <div className="analytics-card">
                       <h3>📊 Test Status Distribution</h3>

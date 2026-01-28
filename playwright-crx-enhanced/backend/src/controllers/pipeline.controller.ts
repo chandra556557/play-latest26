@@ -297,15 +297,16 @@ export class PipelineController {
 
       const script = rows[0];
       const currentStatus = script.workflowStatus as WorkflowStatus;
+      const userRole = (req as any).user?.role || 'user';
 
-      // Allow finalization from ai_enhanced, testdata_ready, or human_review
-      const allowedStatuses = ['ai_enhanced', 'testdata_ready', 'human_review'];
-      if (!allowedStatuses.includes(currentStatus)) {
+      // Validate transition using state machine (supports admin quick-finalize from draft)
+      if (!isTransitionAllowed(currentStatus, 'finalized', userRole)) {
         return res.status(400).json({
           success: false,
-          error: `Cannot finalize from status: ${currentStatus}. Must be in ai_enhanced, testdata_ready, or human_review status.`,
+          error: `Cannot finalize from status: ${currentStatus}. Allowed path: ai_enhanced → testdata_ready → human_review → finalized. Admins can quick-finalize from draft.`,
           currentStatus,
-          allowedStatuses
+          targetStatus: 'finalized',
+          userRole
         });
       }
 

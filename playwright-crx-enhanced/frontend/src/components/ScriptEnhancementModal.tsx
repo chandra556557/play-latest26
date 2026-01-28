@@ -603,8 +603,8 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
             console.log(`   → External GPT-4 will analyze script and generate test data`);
             
             const genResponse = await axios.post(fullUrl, {
-              script_code: scriptCode,  // GPT-4 will analyze this
-              template: {},  // Let GPT-4 determine the template
+              scriptCode: scriptCode,  // Use camelCase as per Swagger API docs
+              template: {},
               count: Math.ceil(testDataCount / 5) // Distribute count across types
             }, {
               headers: {
@@ -643,8 +643,8 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
         console.log(`📦 External GPT-4 will analyze script and generate test data`);
         
         const genResponse = await axios.post(fullUrl, {
-          script_code: scriptCode,  // GPT-4 will analyze this
-          template: {},  // Let GPT-4 determine the template
+          scriptCode: scriptCode,  // Use camelCase as per Swagger API docs
+          template: {},
           count: testDataCount
         }, {
           headers: {
@@ -1082,7 +1082,7 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-content">
+        <div className="modal-content" style={{width:"93vw",maxWidth:"100vw"}}>
           {viewMode === 'suggestions' ? (
             <div className="suggestions-list">
               {/* Phase I + II: Category toggles */}
@@ -1439,6 +1439,45 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                     
                     if (dataArray.length === 0) return null;
                     
+                    // Check if data contains only metadata (_testDataType, _index)
+                    const hasActualData = dataArray.some((record: any) => {
+                      const keys = Object.keys(record);
+                      return keys.some(key => !key.startsWith('_'));
+                    });
+                    
+                    if (!hasActualData) {
+                      return (
+                        <div style={{
+                          background: 'rgba(251, 191, 36, 0.1)',
+                          color: '#92400e',
+                          padding: '16px',
+                          borderRadius: '8px',
+                          marginBottom: '16px',
+                          border: '2px solid #fbbf24'
+                        }}>
+                          <div style={{ fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+                            ⚠️ No Input Fields Detected
+                          </div>
+                          <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                            The AI analyzed your script but found <strong>no input fields</strong> to generate test data for.
+                            <br/><br/>
+                            <strong>Your script contains:</strong>
+                            <ul style={{ marginTop: '8px', marginBottom: '8px', paddingLeft: '20px' }}>
+                              <li>Page navigation</li>
+                              <li>Element clicks</li>
+                              <li>No form inputs (fill, type, select, etc.)</li>
+                            </ul>
+                            <strong>💡 To generate test data:</strong>
+                            <ol style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                              <li>Select a script with input fields (login forms, registration, search, etc.)</li>
+                              <li>Or upload a script that uses <code>.fill()</code>, <code>.type()</code>, <code>.selectOption()</code></li>
+                              <li>The AI will detect fields like username, email, password, etc. and generate test data</li>
+                            </ol>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
                     return (
                     <div style={{
                       background: 'rgba(255,255,255,0.95)',
@@ -1690,7 +1729,9 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                                     🤖 GPT-4o Analysis:
                                   </div>
                                   <div style={{ whiteSpace: 'pre-wrap', opacity: 0.95 }}>
-                                    {analysis.gpt4_analysis}
+                                    {typeof analysis.gpt4_analysis === 'string' 
+                                      ? analysis.gpt4_analysis 
+                                      : JSON.stringify(analysis.gpt4_analysis, null, 2)}
                                   </div>
                                 </div>
                               )}
@@ -1740,14 +1781,22 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                                       marginBottom: '8px',
                                       wordBreak: 'break-all'
                                     }}>
-                                      {analysis.ai_recommendation.locator}
+                                      {typeof analysis.ai_recommendation === 'object' && analysis.ai_recommendation.locator
+                                        ? analysis.ai_recommendation.locator
+                                        : typeof analysis.ai_recommendation === 'string'
+                                        ? analysis.ai_recommendation
+                                        : JSON.stringify(analysis.ai_recommendation, null, 2)}
                                     </code>
-                                    <div style={{ fontSize: '11px', color: '#047857', fontStyle: 'italic' }}>
-                                      💡 {analysis.ai_recommendation.reasoning}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                                      Confidence: {Math.round(analysis.ai_recommendation.confidence * 100)}%
-                                    </div>
+                                    {typeof analysis.ai_recommendation === 'object' && analysis.ai_recommendation.reasoning && (
+                                      <div style={{ fontSize: '11px', color: '#047857', fontStyle: 'italic' }}>
+                                        💡 {analysis.ai_recommendation.reasoning}
+                                      </div>
+                                    )}
+                                    {typeof analysis.ai_recommendation === 'object' && analysis.ai_recommendation.confidence !== undefined && (
+                                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                                        Confidence: {Math.round(analysis.ai_recommendation.confidence * 100)}%
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -1872,7 +1921,9 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                             🤖 GPT-4o Visual AI Analysis:
                           </div>
                           <div style={{ whiteSpace: 'pre-wrap', opacity: 0.95 }}>
-                            {visualAIAnalysis.gpt4_analysis}
+                            {typeof visualAIAnalysis.gpt4_analysis === 'string'
+                              ? visualAIAnalysis.gpt4_analysis
+                              : JSON.stringify(visualAIAnalysis.gpt4_analysis, null, 2)}
                           </div>
                         </div>
                       )}
@@ -2102,10 +2153,14 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                             wordBreak: 'break-all',
                             marginBottom: '8px'
                           }}>
-                            {screenshotComparison.suggested_playwright_code.assertion}
+                            {typeof screenshotComparison.suggested_playwright_code.assertion === 'string'
+                              ? screenshotComparison.suggested_playwright_code.assertion
+                              : JSON.stringify(screenshotComparison.suggested_playwright_code.assertion, null, 2)}
                           </code>
                           <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                            Options: {screenshotComparison.suggested_playwright_code.options}
+                            Options: {typeof screenshotComparison.suggested_playwright_code.options === 'string'
+                              ? screenshotComparison.suggested_playwright_code.options
+                              : JSON.stringify(screenshotComparison.suggested_playwright_code.options, null, 2)}
                           </div>
                         </div>
                       )}
@@ -2167,7 +2222,9 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                       whiteSpace: 'pre-wrap'
                     }}>
                       <div style={{ fontWeight: 600, marginBottom: '8px', color: '#667eea' }}>📝 Overall Analysis:</div>
-                      {uploadAnalysis.gpt4_script_analysis}
+                      {typeof uploadAnalysis.gpt4_script_analysis === 'string'
+                        ? uploadAnalysis.gpt4_script_analysis
+                        : JSON.stringify(uploadAnalysis.gpt4_script_analysis, null, 2)}
                     </div>
                   )}
 
@@ -2255,7 +2312,9 @@ export const ScriptEnhancementModal: React.FC<ScriptEnhancementModalProps> = ({
                                 🤖 GPT-4o Recommendation:
                               </div>
                               <div style={{ whiteSpace: 'pre-wrap', opacity: 0.95 }}>
-                                {analysis.gpt4_recommendation}
+                                {typeof analysis.gpt4_recommendation === 'string'
+                                  ? analysis.gpt4_recommendation
+                                  : JSON.stringify(analysis.gpt4_recommendation, null, 2)}
                               </div>
                             </div>
                           )}

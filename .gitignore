@@ -2,3 +2,12 @@ node_modules/
 lib/
 .eslintcache
 .env
+dist/
+build/
+allure-results/
+allure-reports/
+logs/
+*.log
+*.zip
+*.rar
+.trae/

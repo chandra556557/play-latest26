@@ -13,7 +13,8 @@ import {
   generateBoundaryTestData,
   generateEquivalenceTestData,
   generatePositiveTestData,
-  generateNegativeTestData
+  generateNegativeTestData,
+  generateFromScriptTestData
 } from '../controllers/testData.controller';
 
 const router = Router();
@@ -46,5 +47,6 @@ router.post('/generate/boundary', generateBoundaryTestData);
 router.post('/generate/equivalence', generateEquivalenceTestData);
 router.post('/generate/positive', generatePositiveTestData);
 router.post('/generate/negative', generateNegativeTestData);
+router.post('/generate/from-script', generateFromScriptTestData);
 
 export default router;

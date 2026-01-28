@@ -1113,9 +1113,11 @@ export const applyEnhancement = async (req: Request, res: Response) => {
     // Update the script with enhanced code
     const { rows } = await pool.query(
       `UPDATE "Script"
-       SET code = $2, "updatedAt" = CURRENT_TIMESTAMP
+       SET code = $2,
+           "workflowStatus" = 'ai_enhanced',
+           "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $1
-       RETURNING id, name, "updatedAt"`,
+       RETURNING id, name, "workflowStatus", "updatedAt"`,
       [id, enhancedCode]
     );
 
