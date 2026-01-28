@@ -153,6 +153,20 @@ export class AllureService {
         // Verify index.html was created
         const indexPath = path.join(reportPath, 'index.html');
         if (fs.existsSync(indexPath)) {
+          // Customize the report title from 'Allure Report' to 'Playwright CRX'
+          let htmlContent = fs.readFileSync(indexPath, 'utf-8');
+          htmlContent = htmlContent.replace(/<title>Allure Report/g, '<title>Playwright CRX');
+          htmlContent = htmlContent.replace(/Allure Report summary mail/g, 'Playwright CRX summary mail');
+          fs.writeFileSync(indexPath, htmlContent);
+          
+          // Also update summary.json if it exists
+          const summaryPath = path.join(reportPath, 'widgets', 'summary.json');
+          if (fs.existsSync(summaryPath)) {
+            let summaryContent = fs.readFileSync(summaryPath, 'utf-8');
+            summaryContent = summaryContent.replace(/"reportName":"Allure Report"/g, '"reportName":"Playwright CRX"');
+            fs.writeFileSync(summaryPath, summaryContent);
+          }
+          
           logger.info(`✅ Official Allure report generated successfully at: ${reportPath}`);
           return reportPath;
         } else {
@@ -168,9 +182,9 @@ export class AllureService {
           logger.warn(`No Allure results found for test run: ${testRunId}, creating empty report`);
           const emptyReportHtml = `<!DOCTYPE html>
 <html>
-<head><title>Test Report - ${testRunId}</title></head>
+<head><title>Playwright CRX - ${testRunId}</title></head>
 <body style="font-family: Arial, sans-serif; margin: 20px;">
-<h1>Test Report</h1>
+<h1>Playwright CRX Report</h1>
 <p>Report for test run: ${testRunId}</p>
 <p>Status: No test results available</p>
 </body>
@@ -185,7 +199,7 @@ export class AllureService {
         const basicReportHtml = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Test Report - ${resultsData.name || testRunId}</title>
+  <title>Playwright CRX - ${resultsData.name || testRunId}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
     .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; }
@@ -204,7 +218,7 @@ export class AllureService {
 <body>
   <div class="header">
     <div class="container">
-      <h1>🎭 Test Execution Report</h1>
+      <h1>🎭 Playwright CRX Test Execution Report</h1>
       <p style="opacity: 0.9;">Test Run ID: ${testRunId}</p>
     </div>
   </div>

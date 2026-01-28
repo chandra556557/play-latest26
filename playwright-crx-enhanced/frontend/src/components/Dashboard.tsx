@@ -234,7 +234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     }
   };
 
-  const generateAllureReport = async (testRunId: string) => {
+  const generateExecutionReport = async (testRunId: string) => {
     setGeneratingReport(testRunId);
     try {
       // First check if report already exists
@@ -913,7 +913,7 @@ Navigating to Test Runs...`);
                             userRole !== 'user' && (
                               <button
                                 className="btn-primary"
-                                onClick={() => generateAllureReport(run.id)}
+                                onClick={() => generateExecutionReport(run.id)}
                                 disabled={generatingReport === run.id}
                               >
                                 {generatingReport === run.id ? '⏳ Generating...' : '📊 Generate Report'}
@@ -941,7 +941,7 @@ Navigating to Test Runs...`);
           {/* Database Testing */}
           {activeView === 'databasetesting' && <DatabaseTesting />}
 
-          {/* Allure Reports */}
+          {/* Execution Reports */}
           {activeView === 'allure' && (
             <div className="view-container full-height">
               <h1 className="view-title">Test Execution Reports</h1>
