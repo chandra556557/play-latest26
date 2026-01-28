@@ -195,15 +195,24 @@ export class AllureService {
 // Replace Allure branding after page loads
 (function() {
   function replaceAllureBranding() {
-    // Replace text in sidebar navigation
-    const elements = document.querySelectorAll('*');
-    elements.forEach(el => {
-      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
-        const text = el.textContent;
-        if (text && text.trim() === 'Allure') {
-          el.textContent = 'Playwright CRX';
-        }
+    // Replace ALL text nodes containing 'Allure' with 'Playwright CRX'
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+    
+    const nodesToReplace = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (node.nodeValue && node.nodeValue.includes('Allure')) {
+        nodesToReplace.push(node);
       }
+    }
+    
+    nodesToReplace.forEach(node => {
+      node.nodeValue = node.nodeValue.replace(/Allure/g, 'Playwright CRX');
     });
     
     // Replace logo in sidebar
@@ -211,18 +220,43 @@ export class AllureService {
     if (brand) {
       brand.innerHTML = '<img src="playwright-crx-logo.png" alt="Playwright CRX" style="max-width: 100%; max-height: 100%; object-fit: contain;" />';
     }
+    
+    // Replace in attributes (like titles, aria-labels, etc.)
+    document.querySelectorAll('[title*="Allure"]').forEach(el => {
+      el.setAttribute('title', el.getAttribute('title').replace(/Allure/g, 'Playwright CRX'));
+    });
+    document.querySelectorAll('[aria-label*="Allure"]').forEach(el => {
+      el.setAttribute('aria-label', el.getAttribute('aria-label').replace(/Allure/g, 'Playwright CRX'));
+    });
   }
+  
+  // Run immediately
+  replaceAllureBranding();
   
   // Run after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', replaceAllureBranding);
-  } else {
-    replaceAllureBranding();
   }
   
-  // Also run after a delay to catch dynamically rendered content
+  // Run after delays to catch dynamically rendered content
+  setTimeout(replaceAllureBranding, 100);
   setTimeout(replaceAllureBranding, 500);
   setTimeout(replaceAllureBranding, 1000);
+  setTimeout(replaceAllureBranding, 2000);
+  
+  // Use MutationObserver to catch any future changes
+  const observer = new MutationObserver(() => {
+    replaceAllureBranding();
+  });
+  
+  // Start observing after a brief delay
+  setTimeout(() => {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }, 100);
 })();
 </script>
 `;
