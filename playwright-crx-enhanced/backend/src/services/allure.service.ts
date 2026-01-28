@@ -170,8 +170,8 @@ export class AllureService {
           // Replace Allure text in the UI with Playwright CRX
           htmlContent = htmlContent.replace(/Allure/g, 'Playwright CRX');
           
-          // Inject custom CSS to replace logo
-          const customCSS = `
+          // Inject custom CSS and JavaScript to replace logo
+          const customCode = `
 <style>
 /* Replace Allure logo with Playwright CRX logo */
 .side-nav__brand {
@@ -186,9 +186,47 @@ export class AllureService {
 .side-nav__brand img {
   display: none !important;
 }
+/* Hide Allure text in sidebar */
+.side-nav__brand::after {
+  content: '' !important;
+}
 </style>
+<script>
+// Replace Allure branding after page loads
+(function() {
+  function replaceAllureBranding() {
+    // Replace text in sidebar navigation
+    const elements = document.querySelectorAll('*');
+    elements.forEach(el => {
+      if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+        const text = el.textContent;
+        if (text && text.trim() === 'Allure') {
+          el.textContent = 'Playwright CRX';
+        }
+      }
+    });
+    
+    // Replace logo in sidebar
+    const brand = document.querySelector('.side-nav__brand');
+    if (brand) {
+      brand.innerHTML = '<img src="playwright-crx-logo.png" alt="Playwright CRX" style="max-width: 100%; max-height: 100%; object-fit: contain;" />';
+    }
+  }
+  
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', replaceAllureBranding);
+  } else {
+    replaceAllureBranding();
+  }
+  
+  // Also run after a delay to catch dynamically rendered content
+  setTimeout(replaceAllureBranding, 500);
+  setTimeout(replaceAllureBranding, 1000);
+})();
+</script>
 `;
-          htmlContent = htmlContent.replace('</head>', customCSS + '</head>');
+          htmlContent = htmlContent.replace('</head>', customCode + '</head>');
           
           fs.writeFileSync(indexPath, htmlContent);
           
