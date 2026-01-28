@@ -170,6 +170,16 @@ export class AllureService {
           // Replace Allure text in the UI with Playwright CRX
           htmlContent = htmlContent.replace(/Allure/g, 'Playwright CRX');
           
+          // Specifically target the brand text span
+          htmlContent = htmlContent.replace(
+            /<span class="side-nav__brand-text">Allure<\/span>/g,
+            '<span class="side-nav__brand-text">Playwright CRX</span>'
+          );
+          htmlContent = htmlContent.replace(
+            /<span class="side-nav__brand-text">Playwright CRX<\/span>/g,
+            '<span class="side-nav__brand-text">Playwright CRX</span>'
+          );
+          
           // Inject custom CSS and JavaScript to replace logo
           const customCode = `
 <style>
@@ -219,6 +229,12 @@ export class AllureService {
     const brand = document.querySelector('.side-nav__brand');
     if (brand) {
       brand.innerHTML = '<img src="playwright-crx-logo.png" alt="Playwright CRX" style="max-width: 100%; max-height: 100%; object-fit: contain;" />';
+    }
+    
+    // Specifically target the brand text span
+    const brandText = document.querySelector('.side-nav__brand-text');
+    if (brandText) {
+      brandText.textContent = 'Playwright CRX';
     }
     
     // Replace in attributes (like titles, aria-labels, etc.)
