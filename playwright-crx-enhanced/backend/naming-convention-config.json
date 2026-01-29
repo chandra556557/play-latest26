@@ -1,0 +1,51 @@
+{
+  "testNamingConvention": {
+    "format": "[Feature Area]_[Test Type]_[Specific Action/Behavior]_[Environment(Optional)]",
+    "description": "Standardized naming convention for test scripts to ensure consistency and readability",
+    "examples": [
+      {
+        "name": "login_ui_positive_validCredentials_LoginSuccess",
+        "featureArea": "login",
+        "testType": "ui",
+        "specificAction": "validCredentials",
+        "behavior": "LoginSuccess"
+      },
+      {
+        "name": "search_function_negative_invalidInput_SearchFailure",
+        "featureArea": "search",
+        "testType": "function",
+        "specificAction": "invalidInput",
+        "behavior": "SearchFailure"
+      },
+      {
+        "name": "cart_e2e_addItemsAndViewCart_Chrome",
+        "featureArea": "cart",
+        "testType": "e2e",
+        "specificAction": "addItemsAndViewCart",
+        "environment": "Chrome"
+      }
+    ],
+    "featureAreas": [
+      "login", "search", "cart", "checkout", "api_auth", 
+      "user_profile", "dashboard", "settings", "notifications", "reports"
+    ],
+    "testTypes": [
+      "positive", "negative", "e2e", "ui", "api", 
+      "performance", "accessibility", "security", "integration", "smoke"
+    ],
+    "specificActions": [
+      "validCredentials", "invalidInput", "addItem", "editPersonalInfo", 
+      "loadTime", "clickButton", "submitForm", "validateField"
+    ],
+    "environments": [
+      "Chrome", "Firefox", "Safari", "Mobile", "Desktop", "iOS", "Android"
+    ],
+    "documentation": "./NAMING_CONVENTION.md",
+    "appliesTo": [
+      "test scripts",
+      "script name field",
+      "automation scripts",
+      "regression tests"
+    ]
+  }
+}

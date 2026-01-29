@@ -3,20 +3,20 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 
-const ALLURE_RESULTS_DIR = path.join(process.cwd(), 'allure-results');
-const ALLURE_REPORTS_DIR = path.join(process.cwd(), 'allure-reports');
+const PLAYWRIGHT_CRX_RESULTS_DIR = path.join(process.cwd(), 'playwright-crx-results');
+const PLAYWRIGHT_CRX_REPORTS_DIR = path.join(process.cwd(), 'playwright-crx-reports');
 
-export class AllureService {
+export class PlaywrightCrxService {
   constructor() {
     this.ensureDirectories();
   }
 
   private ensureDirectories() {
-    if (!fs.existsSync(ALLURE_RESULTS_DIR)) {
-      fs.mkdirSync(ALLURE_RESULTS_DIR, { recursive: true });
+    if (!fs.existsSync(PLAYWRIGHT_CRX_RESULTS_DIR)) {
+      fs.mkdirSync(PLAYWRIGHT_CRX_RESULTS_DIR, { recursive: true });
     }
-    if (!fs.existsSync(ALLURE_REPORTS_DIR)) {
-      fs.mkdirSync(ALLURE_REPORTS_DIR, { recursive: true });
+    if (!fs.existsSync(PLAYWRIGHT_CRX_REPORTS_DIR)) {
+      fs.mkdirSync(PLAYWRIGHT_CRX_REPORTS_DIR, { recursive: true });
     }
   }
 
@@ -32,19 +32,19 @@ export class AllureService {
         steps: [],
       };
 
-      const resultsPath = path.join(ALLURE_RESULTS_DIR, `${testRunId}-result.json`);
+      const resultsPath = path.join(PLAYWRIGHT_CRX_RESULTS_DIR, `${testRunId}-result.json`);
       fs.writeFileSync(resultsPath, JSON.stringify(testData, null, 2));
 
       return testData;
     } catch (error) {
-      logger.error('Error starting Allure test:', error);
+      logger.error('Error starting Playwright CRX test:', error);
       throw error;
     }
   }
 
   async recordStep(testId: string, stepName: string, status: 'passed' | 'failed' | 'broken', duration?: number) {
     try {
-      const resultsPath = path.join(ALLURE_RESULTS_DIR, `${testId}-result.json`);
+      const resultsPath = path.join(PLAYWRIGHT_CRX_RESULTS_DIR, `${testId}-result.json`);
 
       const stepData = {
         name: stepName,
@@ -65,13 +65,13 @@ export class AllureService {
 
       fs.writeFileSync(resultsPath, JSON.stringify(results, null, 2));
     } catch (error) {
-      logger.error('Error recording Allure step:', error);
+      logger.error('Error recording Playwright CRX step:', error);
     }
   }
 
   async endTest(testId: string, status: 'passed' | 'failed' | 'broken', errorMessage?: string) {
     try {
-      const resultsPath = path.join(ALLURE_RESULTS_DIR, `${testId}-result.json`);
+      const resultsPath = path.join(PLAYWRIGHT_CRX_RESULTS_DIR, `${testId}-result.json`);
 
       const result = {
         uuid: testId,
@@ -94,15 +94,15 @@ export class AllureService {
 
       fs.writeFileSync(resultsPath, JSON.stringify(result, null, 2));
 
-      logger.info(`Allure test ended: ${testId} with status: ${status}`);
+      logger.info(`Playwright CRX test ended: ${testId} with status: ${status}`);
     } catch (error) {
-      logger.error('Error ending Allure test:', error);
+      logger.error('Error ending Playwright CRX test:', error);
     }
   }
 
   async generateReport(testRunId: string): Promise<string> {
     try {
-      const reportPath = path.join(ALLURE_REPORTS_DIR, testRunId);
+      const reportPath = path.join(PLAYWRIGHT_CRX_REPORTS_DIR, testRunId);
 
       if (!fs.existsSync(reportPath)) {
         fs.mkdirSync(reportPath, { recursive: true });
@@ -117,12 +117,12 @@ export class AllureService {
         logger.info(`✅ Copied Playwright CRX logo to report directory`);
       }
 
-      // Check if allure results exist for this test run
-      const resultsPath = path.join(ALLURE_RESULTS_DIR, `${testRunId}-result.json`);
+      // Check if playwright crx results exist for this test run
+      const resultsPath = path.join(PLAYWRIGHT_CRX_RESULTS_DIR, `${testRunId}-result.json`);
       
       // Always try to generate with Allure CLI first for the official report
       try {
-        logger.info(`Generating Allure report with CLI for: ${testRunId}`);
+        logger.info(`Generating Playwright CRX report with CLI for: ${testRunId}`);
         
         // Fix JAVA_HOME if it ends with \bin
         let javaHome = process.env.JAVA_HOME || '';
@@ -142,7 +142,7 @@ export class AllureService {
           fs.mkdirSync(reportPath, { recursive: true });
         }
         
-        const command = `${allureCmd} generate "${ALLURE_RESULTS_DIR}" -o "${reportPath}" --clean`;
+        const command = `${allureCmd} generate "${PLAYWRIGHT_CRX_RESULTS_DIR}" -o "${reportPath}" --clean`;
         
         logger.info(`Executing: ${command}`);
         
@@ -157,7 +157,7 @@ export class AllureService {
           }
         });
         
-        logger.info(`Allure CLI output: ${result}`);
+        logger.info(`Playwright CRX CLI output: ${result}`);
         
         // Verify index.html was created
         const indexPath = path.join(reportPath, 'index.html');
@@ -297,7 +297,7 @@ export class AllureService {
             fs.writeFileSync(mailPath, mailContent);
           }
           
-          logger.info(`✅ Official Allure report generated successfully at: ${reportPath}`);
+          logger.info(`✅ Official Playwright CRX report generated successfully at: ${reportPath}`);
           logger.info(`✅ Branding updated to 'Playwright CRX'`);
           return reportPath;
         } else {
@@ -305,12 +305,12 @@ export class AllureService {
         }
         
       } catch (execError: any) {
-        logger.warn('⚠️ Allure CLI generation failed, trying fallback...', execError.message);
+        logger.warn('⚠️ Playwright CRX CLI generation failed, trying fallback...', execError.message);
         logger.warn('Error details:', execError.toString());
         
         // Fallback: Create a basic HTML report
         if (!fs.existsSync(resultsPath)) {
-          logger.warn(`No Allure results found for test run: ${testRunId}, creating empty report`);
+          logger.warn(`No Playwright CRX results found for test run: ${testRunId}, creating empty report`);
           const emptyReportHtml = `<!DOCTYPE html>
 <html>
 <head><title>Playwright CRX - ${testRunId}</title></head>
@@ -383,9 +383,9 @@ export class AllureService {
   }
 
   async getReportUrl(testRunId: string): Promise<string> {
-    const reportPath = path.join(ALLURE_REPORTS_DIR, testRunId);
+    const reportPath = path.join(PLAYWRIGHT_CRX_REPORTS_DIR, testRunId);
     if (fs.existsSync(reportPath)) {
-      return `/allure-reports/${testRunId}/index.html`;
+      return `/playwright-crx-reports/${testRunId}/index.html`;
     }
     return '';
   }
@@ -395,38 +395,38 @@ export class AllureService {
       const now = Date.now();
       const maxAge = daysToKeep * 24 * 60 * 60 * 1000;
 
-      const reports = fs.readdirSync(ALLURE_REPORTS_DIR);
+      const reports = fs.readdirSync(PLAYWRIGHT_CRX_REPORTS_DIR);
       for (const report of reports) {
-        const reportPath = path.join(ALLURE_REPORTS_DIR, report);
+        const reportPath = path.join(PLAYWRIGHT_CRX_REPORTS_DIR, report);
         const stats = fs.statSync(reportPath);
 
         if (now - stats.mtimeMs > maxAge) {
           fs.rmSync(reportPath, { recursive: true, force: true });
-          logger.info(`Cleaned up old Allure report: ${report}`);
+          logger.info(`Cleaned up old Playwright CRX report: ${report}`);
         }
       }
     } catch (error) {
-      logger.error('Error cleaning up Allure reports:', error);
+      logger.error('Error cleaning up Playwright CRX reports:', error);
     }
   }
 
   getAllReports(): Array<{ id: string; path: string; createdAt: Date }> {
     try {
-      const reports = fs.readdirSync(ALLURE_REPORTS_DIR);
+      const reports = fs.readdirSync(PLAYWRIGHT_CRX_REPORTS_DIR);
       return reports.map(report => {
-        const reportPath = path.join(ALLURE_REPORTS_DIR, report);
+        const reportPath = path.join(PLAYWRIGHT_CRX_REPORTS_DIR, report);
         const stats = fs.statSync(reportPath);
         return {
           id: report,
-          path: `/allure-reports/${report}/index.html`,
+          path: `/playwright-crx-reports/${report}/index.html`,
           createdAt: stats.birthtime,
         };
       });
     } catch (error) {
-      logger.error('Error getting Allure reports:', error);
+      logger.error('Error getting Playwright CRX reports:', error);
       return [];
     }
   }
 }
 
-export const allureService = new AllureService();
+export const playwrightCrxService = new PlaywrightCrxService();
