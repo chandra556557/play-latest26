@@ -811,3 +811,99 @@ export const generateFromScriptTestData = async (req: Request, res: Response) =>
     return res.status(500).json({ success: false, error: error?.message || 'Failed to generate test data from script' });
   }
 };
+
+/**
+ * Import test data file (CSV or JSON)
+ */
+export const importTestDataFile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { fileName, fileType, environment, data } = req.body;
+
+    if (!fileName || !fileType || !data || !Array.isArray(data)) {
+      throw new AppError('fileName, fileType, and data array are required', 400);
+    }
+
+    if (!['csv', 'json'].includes(fileType)) {
+      throw new AppError('fileType must be csv or json', 400);
+    }
+
+    const id = randomUUID();
+    const { rows } = await pool.query(
+      `INSERT INTO "TestDataFile" 
+       (id, "userId", "fileName", "fileType", environment, "recordCount", data, "uploadedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+       RETURNING *`,
+      [id, userId, fileName, fileType, environment || 'dev', data.length, JSON.stringify(data)]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        ...rows[0],
+        data: JSON.parse(rows[0].data)
+      }
+    });
+  } catch (error: any) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ success: false, error: error.message });
+    } else {
+      res.status(500).json({ success: false, error: error.message || 'Failed to import test data file' });
+    }
+  }
+};
+
+/**
+ * Get all test data files for a user
+ */
+export const getTestDataFiles = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    const { rows } = await pool.query(
+      `SELECT * FROM "TestDataFile" WHERE "userId" = $1 ORDER BY "uploadedAt" DESC`,
+      [userId]
+    );
+
+    const files = rows.map(row => ({
+      ...row,
+      data: JSON.parse(row.data)
+    }));
+
+    res.status(200).json({ success: true, data: files });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Failed to get test data files' });
+  }
+};
+
+/**
+ * Delete a test data file
+ */
+export const deleteTestDataFile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+
+    const existing = await pool.query(
+      `SELECT id FROM "TestDataFile" WHERE id = $1 AND "userId" = $2`,
+      [id, userId]
+    );
+
+    if (!existing.rowCount) {
+      throw new AppError('Test data file not found', 404);
+    }
+
+    await pool.query(
+      `DELETE FROM "TestDataFile" WHERE id = $1 AND "userId" = $2`,
+      [id, userId]
+    );
+
+    res.status(200).json({ success: true, message: 'Test data file deleted successfully' });
+  } catch (error: any) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ success: false, error: error.message });
+    } else {
+      res.status(500).json({ success: false, error: error.message || 'Failed to delete test data file' });
+    }
+  }
+};

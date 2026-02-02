@@ -14,7 +14,10 @@ import {
   generateEquivalenceTestData,
   generatePositiveTestData,
   generateNegativeTestData,
-  generateFromScriptTestData
+  generateFromScriptTestData,
+  importTestDataFile,
+  getTestDataFiles,
+  deleteTestDataFile
 } from '../controllers/testData.controller';
 
 const router = Router();
@@ -48,5 +51,10 @@ router.post('/generate/equivalence', generateEquivalenceTestData);
 router.post('/generate/positive', generatePositiveTestData);
 router.post('/generate/negative', generateNegativeTestData);
 router.post('/generate/from-script', generateFromScriptTestData);
+
+// File Import routes
+router.post('/import', importTestDataFile);
+router.get('/files', getTestDataFiles);
+router.delete('/files/:id', deleteTestDataFile);
 
 export default router;
