@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ApiTesting from './ApiTesting.tsx';
+import ObjectRepository from './ObjectRepository';
 import ScriptEnhancementModal from './ScriptEnhancementModal';
 import ImportScriptModal from './ImportScriptModal';
 import ScriptValidationModal from './ScriptValidationModal';
@@ -46,6 +47,7 @@ type ActiveView =
   | 'runs' 
   | 'testdata' 
   | 'apitesting' 
+  | 'objectrepository'
   | 'allure'
   | 'analytics'
   | 'settings';
@@ -243,6 +245,7 @@ export const Dashboard: React.FC = () => {
     { id: 'scripts', icon: '📝', label: 'Scripts', category: 'Test Management' },
     { id: 'runs', icon: '▶️', label: 'Test Runs', category: 'Test Management' },
     { id: 'testdata', icon: '🗄️', label: 'Test Data', category: 'Data Management' },
+    { id: 'objectrepository', icon: '🗃️', label: 'Object Repository', category: 'Data Management' },
     { id: 'apitesting', icon: '🔌', label: 'API Testing', category: 'Testing Tools' },
     { id: 'allure', icon: '📈', label: 'Test Execution Reports', category: 'Reports' },
     { id: 'analytics', icon: '📉', label: 'Analytics', category: 'Reports' },
@@ -379,6 +382,10 @@ export const Dashboard: React.FC = () => {
                   <button className="action-card" onClick={() => setActiveView('apitesting')}>
                     <span className="action-icon">🔌</span>
                     <span className="action-label">API Testing</span>
+                  </button>
+                  <button className="action-card" onClick={() => setActiveView('objectrepository')}>
+                    <span className="action-icon">🗃️</span>
+                    <span className="action-label">Object Repository</span>
                   </button>
                 </div>
               </div>
@@ -646,6 +653,13 @@ export const Dashboard: React.FC = () => {
 
           {/* API Testing */}
           {activeView === 'apitesting' && <ApiTesting />}
+
+          {/* Object Repository */}
+          {activeView === 'objectrepository' && (
+            <div className="content-section">
+              <ObjectRepository projectId={selectedProjectId || undefined} />
+            </div>
+          )}
 
           {/* Allure Reports */}
           {activeView === 'allure' && (

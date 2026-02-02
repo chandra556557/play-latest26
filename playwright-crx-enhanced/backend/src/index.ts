@@ -27,6 +27,7 @@ import pipelineRoutes from './routes/pipeline.routes';
 import testingStrategiesRoutes from './routes/testing-strategies.routes';
 import visualRegressionRoutes from './routes/visual-regression.routes';
 import databaseTestingRoutes from './routes/database-testing.routes';
+import objectRepositoryRoutes from './routes/objectRepository.routes';
 import pool from './db';
 
 // Middleware
@@ -179,6 +180,7 @@ app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/testing-strategies', testingStrategiesRoutes);
 app.use('/api/visual-regression', visualRegressionRoutes);
 app.use('/api/database-testing', databaseTestingRoutes);
+app.use('/api/object-repository', objectRepositoryRoutes);
 
 app.use((_req, res) => { res.status(404).json({ error: 'Route not found' }); });
 app.use(errorHandler);
