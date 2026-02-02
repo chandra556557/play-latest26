@@ -1,0 +1,23 @@
+.naming-convention-input {
+  position: relative;
+}
+
+.naming-convention-input .suggestion-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.naming-convention-input .suggestion-item:hover {
+  background-color: #f3f4f6;
+}
+
+.naming-convention-input .suggestion-item.active {
+  background-color: #dbeafe;
+}
+
+.naming-convention-input .suggestion-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: 0.75rem;
+}

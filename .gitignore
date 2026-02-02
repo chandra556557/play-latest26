@@ -1,0 +1,16 @@
+node_modules/
+lib/
+.eslintcache
+.env
+dist/
+build/
+allure-results/
+allure-reports/
+logs/
+*.log
+*.zip
+*.rar
+.trae/
+
+# Exception: Keep Playwright CRX logo
+!playwright-crx-logo.png

@@ -1,0 +1,25 @@
+# ============================================
+# EXTERNAL API CONFIGURATION (Genie API)
+# ============================================
+
+# External LLM-Integrated Test Data Generation APIs
+# These endpoints are used by the AI Analysis Service to generate test data
+
+# Boundary Value Analysis - External Genie API
+EXTERNAL_BOUNDARY_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/boundary/generate
+
+# Positive Test Data - External Genie API
+EXTERNAL_POSITIVE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/positive/generate
+
+# Negative Test Data - External Genie API
+EXTERNAL_NEGATIVE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/negative/generate
+
+# Security Test Data - External Genie API
+EXTERNAL_SECURITY_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/security/generate
+
+# Equivalence Test Data - External Genie API
+EXTERNAL_EQUIVALENCE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/equivalence/generate
+
+# External API Access Token
+# Bearer token for authentication with external Genie API
+EXTERNAL_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwZ2FkbWluQGdtYWlsLmNvbSIsInVzZXJJZCI6IjEiLCJleHAiOjE3NjY4MjcwODR9.a_2uqlhnaA6mWVRpSgubud9Kxk-eLLvj-KmlcMX1JMw

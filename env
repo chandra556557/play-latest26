@@ -1,0 +1,89 @@
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+
+# PostgreSQL Host (usually 'localhost' for local development)
+DB_HOST=localhost
+
+# PostgreSQL Port (default is 5432)
+DB_PORT=5433
+
+# Database Name (the database you created for this project)
+DB_NAME=playwright_crx1
+
+# PostgreSQL Username (default superuser is 'postgres')
+DB_USER=postgres
+
+# PostgreSQL Password (set during PostgreSQL installation)
+DB_PASSWORD=postgres124112
+
+# Database Schema (usually 'public')
+DB_SCHEMA=public
+
+# Full Database Connection URL
+# This should match the individual DB_* variables above
+DATABASE_URL="postgresql://postgres:postgres124112@localhost:5433/playwright_crx1?schema=public"
+
+# JWT Secrets (CHANGE THESE IN PRODUCTION!)
+JWT_ACCESS_SECRET="your-super-secret-access-key-change-this-in-production"
+JWT_REFRESH_SECRET="your-super-secret-refresh-key-change-this-in-production"
+
+# Server Configuration
+PORT=3001
+NODE_ENV=development
+
+# AI Analysis Service (Python FastAPI)
+AI_ANALYSIS_SERVICE_URL=http://localhost:8000
+
+# CORS - Chrome Extension ID (update after extension installation)
+ALLOWED_ORIGINS="chrome-extension://your-extension-id-here,http://localhost:3001"
+
+# File Upload
+MAX_FILE_SIZE=10485760  # 10MB in bytes
+UPLOAD_DIR="./uploads"
+
+# WebSocket
+WS_PORT=3001
+
+# Logging
+LOG_LEVEL=debug  # debug, info, warn, error
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Session
+SESSION_TIMEOUT_MINUTES=15  # Access token expiry
+REFRESH_TOKEN_DAYS=7        # Refresh token expiry
+
+# ============================================
+# EXTERNAL API CONFIGURATION (Genie API)
+# ============================================
+
+# External LLM-Integrated Test Data Generation APIs
+# These endpoints are used by the AI Analysis Service to generate test data
+
+# Boundary Value Analysis - External Genie API
+EXTERNAL_BOUNDARY_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/boundary/generate
+
+# Positive Test Data - External Genie API
+EXTERNAL_POSITIVE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/positive/generate
+
+# Negative Test Data - External Genie API
+EXTERNAL_NEGATIVE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/negative/generate
+
+# Security Test Data - External Genie API
+EXTERNAL_SECURITY_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/security/generate
+
+# Equivalence Test Data - External Genie API
+EXTERNAL_EQUIVALENCE_API_URL=http://34.46.36.105:3000/genieapi/assistant/testdata/equivalence/generate
+
+# XPath Analysis - External Genie API
+EXTERNAL_XPATH_DEEP_ANALYSIS_URL=http://34.46.36.105:3000/genieapi/ai-analysis/xpath-deep-analysis
+
+# Upload Script XPath Analysis - External Genie API
+EXTERNAL_UPLOAD_SCRIPT_XPATH_URL=http://34.46.36.105:3000/genieapi/ai-analysis/upload-script-xpath-analysis
+
+# External API Access Token
+# Bearer token for authentication with external Genie API
+EXTERNAL_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwZ2FkbWluQGdtYWlsLmNvbSIsInVzZXJJZCI6IjEiLCJleHAiOjE3NjcyNjY4MjF9.AwYPxH7xCpJ8o4XtyFbjL5Er3Rvg057Yx272g7a1pcI

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test External API Token</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #444;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+    .loading {
+      color: #856404;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 External API Token Tester</h1>
+    <p class="subtitle">Test authentication with http://34.46.36.105:3000</p>
+
+    <div class="input-group">
+      <label for="endpoint">API Endpoint:</label>
+      <input type="text" id="endpoint" value="http://34.46.36.105:3000/genieapi/assistant/testdata/positive/generate">
+    </div>
+
+    <div class="input-group">
+      <label for="token">Bearer Token:</label>
+      <textarea id="token">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwZ2FkbWluQGdtYWlsLmNvbSIsInVzZXJJZCI6IjEiLCJleHAiOjE3NjY4MjcwODR9.a_2uqlhnaA6mWVRpSgubud9Kxk-eLLvj-KmlcMX1JMw</textarea>
+    </div>
+
+    <div class="input-group">
+      <label for="payload">Request Payload (JSON):</label>
+      <textarea id="payload">{
+  "script_code": "test.describe('Sample Test', () => { test('test case', async ({ page }) => { await page.goto('https://example.com'); }); });",
+  "count": 5
+}</textarea>
+    </div>
+
+    <button onclick="testAPI()" id="testBtn">🚀 Test API Call</button>
+    <button onclick="decodeToken()" id="decodeBtn">🔍 Decode Token</button>
+    <button onclick="clearResults()">🗑️ Clear</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function testAPI() {
+      const endpoint = document.getElementById('endpoint').value;
+      const token = document.getElementById('token').value.trim();
+      const payload = document.getElementById('payload').value;
+      const resultDiv = document.getElementById('result');
+      const testBtn = document.getElementById('testBtn');
+
+      testBtn.disabled = true;
+      resultDiv.className = 'result loading';
+      resultDiv.textContent = '⏳ Testing API call...\n\nEndpoint: ' + endpoint;
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+
+        console.log('📤 Request Headers:', headers);
+        console.log('📤 Request Payload:', payload);
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: headers,
+          body: payload
+        });
+
+        const responseText = await response.text();
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          responseData = responseText;
+        }
+
+        if (response.ok) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent = `✅ SUCCESS!
+
+Status: ${response.status} ${response.statusText}
+
+Response:
+${JSON.stringify(responseData, null, 2)}`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent = `❌ FAILED!
+
+Status: ${response.status} ${response.statusText}
+
+Response:
+${JSON.stringify(responseData, null, 2)}
+
+Headers Sent:
+${JSON.stringify(headers, null, 2)}`;
+        }
+
+        console.log('📥 Response:', response);
+        console.log('📥 Response Data:', responseData);
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = `❌ ERROR!
+
+${error.message}
+
+Details:
+${error.stack}`;
+        console.error('Error:', error);
+      } finally {
+        testBtn.disabled = false;
+      }
+    }
+
+    function decodeToken() {
+      const token = document.getElementById('token').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('Invalid JWT format - must have 3 parts separated by dots');
+        }
+
+        const header = JSON.parse(atob(parts[0]));
+        const payload = JSON.parse(atob(parts[1]));
+
+        const expDate = payload.exp ? new Date(payload.exp * 1000) : null;
+        const now = new Date();
+        const isExpired = expDate && expDate < now;
+
+        resultDiv.className = isExpired ? 'result error' : 'result info';
+        resultDiv.textContent = `🔍 TOKEN DECODED:
+
+Header:
+${JSON.stringify(header, null, 2)}
+
+Payload:
+${JSON.stringify(payload, null, 2)}
+
+Expiry: ${expDate ? expDate.toLocaleString() : 'N/A'}
+Status: ${isExpired ? '❌ EXPIRED' : '✅ VALID'}
+Current Time: ${now.toLocaleString()}`;
+
+        console.log('Token Header:', header);
+        console.log('Token Payload:', payload);
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = `❌ Failed to decode token:\n\n${error.message}`;
+      }
+    }
+
+    function clearResults() {
+      document.getElementById('result').textContent = '';
+      document.getElementById('result').className = '';
+    }
+
+    // Auto-decode token on load
+    window.onload = function() {
+      decodeToken();
+    };
+  </script>
+</body>
+</html>
